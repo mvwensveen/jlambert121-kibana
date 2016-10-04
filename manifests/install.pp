@@ -40,6 +40,7 @@ class kibana::install (
     gid     => $group,
     home    => $install_path,
     require => Group[$group],
+    managehome => true,
   }
 
   wget::fetch { 'kibana':
