@@ -132,6 +132,7 @@ class kibana (
   validate_absolute_path($install_path)
   validate_absolute_path($tmp_dir)
   validate_absolute_path($pid_file)
+  validate_absolute_path($log_file)
   validate_bool($es_preserve_host)
   validate_bool($verify_ssl)
 

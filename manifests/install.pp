@@ -28,6 +28,7 @@ class kibana::install (
 
   $service_provider = $::kibana::params::service_provider
   $run_path         = $::kibana::params::run_path
+  $log_path         = dirname($log_file)
 
   group { $group:
     ensure => 'present',
@@ -81,7 +82,7 @@ class kibana::install (
     require => User['kibana'],
   }
 
-  file { '/var/log/kibana':
+  file { "${log_path}":
     ensure  => directory,
     owner   => kibana,
     group   => kibana,
