@@ -10,6 +10,7 @@ class kibana::install (
   $install_path        = $::kibana::install_path,
   $group               = $::kibana::group,
   $user                = $::kibana::user,
+  $log_file            = $::kibana::log_file,
 ) {
   if '4.6' in $version {
     $filename = $::architecture ? {
