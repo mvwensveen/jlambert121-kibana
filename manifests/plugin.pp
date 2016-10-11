@@ -42,12 +42,6 @@ define kibana::plugin(
     try_sleep => 10,
     timeout   => 600,
   }
-
-  exec { 'download_kibana':
-	command     => "${kibana::params::download_tool} ${tmp_dir}/${filename}.tar.gz ${base_url}/${filename}.tar.gz 2> /dev/null",
-	require     => User[$user],
-	unless      => "test -e ${install_path}/${filename}/LICENSE.txt",
-  }
   
   case $ensure {
     'installed', 'present': {
@@ -55,7 +49,7 @@ define kibana::plugin(
       if $offline_plugin_install == true {
         exec { "download_plugin_$name":
           path    => [ '/bin', '/usr/bin', '/usr/local/bin' ]
-          command => "${kibana::params::download_tool} $install_file $plugin_file 2> /dev/null",
+          command => "${::kibana::params::download_tool} $install_file $plugin_file 2> /dev/null",
           require => User[$user],
           unless  => "test -e ${install_file}",
         }
