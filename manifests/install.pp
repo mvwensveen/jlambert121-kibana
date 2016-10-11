@@ -45,11 +45,10 @@ class kibana::install (
     managehome => true,
   }
 
-  wget::fetch { 'kibana':
-    source      => "${base_url}/${filename}.tar.gz",
-    destination => "${tmp_dir}/${filename}.tar.gz",
-    require     => User[$user],
-    unless      => "test -e ${install_path}/${filename}/LICENSE.txt",
+  exec { 'download_kibana':
+	command     => "${kibana::params::download_tool} ${tmp_dir}/${filename}.tar.gz ${base_url}/${filename}.tar.gz 2> /dev/null",
+	require     => User[$user],
+	unless      => "test -e ${install_path}/${filename}/LICENSE.txt",
   }
 
   exec { 'extract_kibana':
@@ -57,7 +56,7 @@ class kibana::install (
     path    => ['/bin', '/sbin'],
     creates => "${install_path}/${filename}",
     notify  => Exec['ensure_correct_permissions'],
-    require => Wget::Fetch['kibana'],
+    require => Exec['download_kibana'],
   }
 
   exec { 'ensure_correct_permissions':
