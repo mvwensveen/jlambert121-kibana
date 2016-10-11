@@ -31,6 +31,24 @@ class kibana::params {
   $offline_plugin_install = false
   $plugin_file            = undef
 
+  # Download tool
+
+  case $::kernel {
+    'Linux': {
+      $download_tool = 'wget --no-check-certificate -O'
+    }
+    'Darwin': {
+      $download_tool = 'curl --insecure -o'
+    }
+    'OpenBSD': {
+      $download_tool = 'ftp -o'
+    }
+    default: {
+      fail("\"${module_name}\" provides no download tool default value
+           for \"${::kernel}\"")
+    }
+  }
+  
   case $::operatingsystem {
     'RedHat', 'CentOS', 'Fedora', 'Scientific', 'OracleLinux', 'SLC': {
 

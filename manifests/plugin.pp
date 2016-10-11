@@ -53,10 +53,11 @@ define kibana::plugin(
     'installed', 'present': {
       $name_file_path = "${plugins_dir}/${name}/.name"
       if $offline_plugin_install == true {
-	    exec { "download_plugin_$name":
-		  command     => "${kibana::params::download_tool} $install_file $plugin_file 2> /dev/null",
-	      require     => User[$user],
-	      unless      => "test -e ${install_file}",
+        exec { "download_plugin_$name":
+          path    => [ '/bin', '/usr/bin', '/usr/local/bin' ]
+          command => "${kibana::params::download_tool} $install_file $plugin_file 2> /dev/null",
+          require => User[$user],
+          unless  => "test -e ${install_file}",
         }
         exec { "install_plugin_${name}":
           command => $install_cmd,

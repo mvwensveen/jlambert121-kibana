@@ -24,8 +24,6 @@ class kibana::install (
       /(amd64|x86_64)/ => "kibana-${version}-linux-x64",
   }
   }
-  
-  
 
   $service_provider = $::kibana::params::service_provider
   $run_path         = $::kibana::params::run_path
@@ -46,11 +44,12 @@ class kibana::install (
   }
 
   exec { 'download_kibana':
-	command     => "${kibana::params::download_tool} ${tmp_dir}/${filename}.tar.gz ${base_url}/${filename}.tar.gz 2> /dev/null",
-	require     => User[$user],
-	unless      => "test -e ${install_path}/${filename}/LICENSE.txt",
+    path        => [ '/bin', '/usr/bin', '/usr/local/bin' ]
+    command     => "${::kibana::params::download_tool} ${tmp_dir}/${filename}.tar.gz ${base_url}/${filename}.tar.gz 2> /dev/null",
+    require     => User[$user],
+    unless      => "test -e ${install_path}/${filename}/LICENSE.txt",
   }
-
+  
   exec { 'extract_kibana':
     command => "tar -xzf ${tmp_dir}/${filename}.tar.gz -C ${install_path}",
     path    => ['/bin', '/sbin'],

@@ -1,6 +1,5 @@
 fixtures:
   forge_modules:
-    wget: 'maestrodev/wget'
     stdlib: 
       repo: "puppetlabs/stdlib"
       ref: "4.2.0"
