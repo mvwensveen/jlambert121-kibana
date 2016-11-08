@@ -10,15 +10,24 @@ class kibana::install (
   $install_path        = $::kibana::install_path,
   $group               = $::kibana::group,
   $user                = $::kibana::user,
+  $log_file            = $::kibana::log_file,
 ) {
-
-  $filename = $::architecture ? {
-    /(i386|x86$)/    => "kibana-${version}-linux-x86",
-    /(amd64|x86_64)/ => "kibana-${version}-linux-x64",
+  if '4.6' in $version {
+    $filename = $::architecture ? {
+      /(i386|x86$)/    => "kibana-${version}-linux-x86",
+      /(amd64|x86_64)/ => "kibana-${version}-linux-x86_64",
+    }
+  }
+  else {
+    $filename = $::architecture ? {
+      /(i386|x86$)/    => "kibana-${version}-linux-x86",
+      /(amd64|x86_64)/ => "kibana-${version}-linux-x64",
+  }
   }
 
   $service_provider = $::kibana::params::service_provider
   $run_path         = $::kibana::params::run_path
+  $log_path         = dirname($log_file)
 
   group { $group:
     ensure => 'present',
@@ -31,21 +40,22 @@ class kibana::install (
     gid     => $group,
     home    => $install_path,
     require => Group[$group],
+    managehome => true,
   }
 
-  wget::fetch { 'kibana':
-    source      => "${base_url}/${filename}.tar.gz",
-    destination => "${tmp_dir}/${filename}.tar.gz",
+  exec { 'download_kibana':
+    path        => [ '/bin', '/usr/bin', '/usr/local/bin' ],
+    command     => "${::kibana::params::download_tool} ${tmp_dir}/${filename}.tar.gz ${base_url}/${filename}.tar.gz 2> /dev/null",
     require     => User[$user],
     unless      => "test -e ${install_path}/${filename}/LICENSE.txt",
   }
-
+  
   exec { 'extract_kibana':
     command => "tar -xzf ${tmp_dir}/${filename}.tar.gz -C ${install_path}",
     path    => ['/bin', '/sbin'],
     creates => "${install_path}/${filename}",
     notify  => Exec['ensure_correct_permissions'],
-    require => Wget::Fetch['kibana'],
+    require => Exec['download_kibana'],
   }
 
   exec { 'ensure_correct_permissions':
@@ -71,7 +81,7 @@ class kibana::install (
     require => User['kibana'],
   }
 
-  file { '/var/log/kibana':
+  file { "${log_path}":
     ensure  => directory,
     owner   => kibana,
     group   => kibana,
