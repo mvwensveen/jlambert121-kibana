@@ -3,7 +3,7 @@
 # kibana    Web interface to Logstash.
 #
 # chkconfig:   345 99 01
-# description: Kibana is a web interface to Logstash.
+# description: Starts and stops a single kibana instance on this system.
 
 ### BEGIN INIT INFO
 # Provides: kibana
@@ -11,10 +11,10 @@
 # Required-Stop: $all
 # Default-Start: 2 3 4 5
 # Default-Stop: 0 1 6
-# Short-Description: Kibana
-# Description: Kibana is a web interface to Logstash.
+# Short-Description: This service manages the kibana daemon
+# Description: Kibana is the Elasticsearch WebUI for time-based data
 ### END INIT INFO
 
-DESC="Kibana 4"
+DESC="Kibana"
 NAME=kibana
 
