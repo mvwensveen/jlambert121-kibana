@@ -11,6 +11,7 @@ class kibana::install (
   $group               = $::kibana::group,
   $user                = $::kibana::user,
   $log_file            = $::kibana::log_file,
+  $pid_file            = $::kibana::pid_file,
 ) {
   if '4.6' in $version {
     $filename = $::architecture ? {
@@ -28,7 +29,7 @@ class kibana::install (
   $service_provider = $::kibana::params::service_provider
   $run_path         = $::kibana::params::run_path
   $log_path         = dirname($log_file)
-
+  
   group { $group:
     ensure => 'present',
     system => true,

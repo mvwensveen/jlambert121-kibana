@@ -2,108 +2,103 @@ if [ "x$KIBANA_HOME" = "x" ]; then
     KIBANA_HOME="<%= @install_path %>/kibana"
 fi
 
-DAEMON=$KIBANA_HOME/bin/$NAME
-PIDFILE=/var/run/$NAME.pid
-
-
-if [ "x$LOG" = "x" ]; then
-    LOG="/var/log/kibana/kibana.log"
+if [ "x$KIBANA_USER" = "x" ]; then
+    KIBANA_USER="<%= @user %>"
 fi
 
-if [ "x$DAEMON_ARGS" = "x" ]; then
-    DAEMON_ARGS=""
+if [ "x$KIBANA_GROUP" = "x" ]; then
+    KIBANA_GROUP="<%= @group %>"
 fi
 
-if [ "x$SCRIPTNAME" = "x" ]; then
-    SCRIPTNAME="/etc/init.d/$NAME"
+if [ "x$KIBANA_LOG" = "x" ]; then
+    KIBANA_LOG="<%= @log_file %>"
 fi
 
+if [ "x$KIBANA_PID_FILE" = "x" ]; then
+    KIBANA_PID_FILE="<%= @pid_file %>"
+    KIBANA_PID_DIR="$(dirname $KIBANA_PID_FILE)"
+fi
 
-pid_file_exists() {
-    [ -f "$PIDFILE" ]
+prog="kibana"
+pidfile=$KIBANA_PID_FILE
+mkdir -p $KIBANA_PID_DIR
+chown "$KIBANA_USER":"$KIBANA_GROUP" "$KIBANA_PID_DIR"
+exec=$KIBANA_HOME/bin/$prog
+lockfile=/var/lock/subsys/$prog
+
+start() {
+
+    [ -x $exec ] || exit 5
+    echo -n $"Starting $prog: "
+    # if not running, start it up here, usually something like "daemon $exec"
+    daemon --user $KIBANA_USER --pidfile $pidfile $exec -p $pidfile 1>"$KIBANA_LOG" 2>&1 &
+    retval=$?
+    echo
+    [ $retval -eq 0 ] && touch $lockfile
+    return $retval
 }
 
-do_start()      {
-
-        if pid_file_exists
-        then
-            echo "Kibana is already running"
-        else
-            $DAEMON $DAEMON_ARGS 1>"$LOG" 2>&1 &
-            echo $! > "$PIDFILE"
-            PID=$!
-            if [ "$PID" > 0 ]
-            then
-                echo "Kibana started with pid $!"
-            else
-                echo "Kibana could not be started"
-            fi
-        fi
+stop() {
+    echo -n $"Stopping $prog: "
+    # stop it here, often "killproc $prog"
+    killproc -p $pidfile -d 20 $prog
+    retval=$?
+    echo
+    [ $retval -eq 0 ] && rm -f $lockfile
+    return $retval
 }
 
-
-do_status() {
-        if pid_file_exists
-        then
-            PID=$(cat $PIDFILE)
-            STATUS=$(ps ax | grep $PID | grep -v grep | awk '{print $1}')
-
-            if [ "$STATUS" = "$PID" ]
-            then
-                echo "Kibana is running on proccess $PID"
-                result=0
-            else
-                echo "Kibana is NOT running"
-                rm $PIDFILE
-                result=1
-            fi
-        else
-            echo "Kibana is NOT running"
-            result=1
-        fi
-        return $result
+restart() {
+    stop
+    start
 }
 
-do_stop() {
-        if pid_file_exists
-        then
-            PID=$(cat $PIDFILE)
-            STATUS=$(ps ax | grep $PID | grep -v grep | awk '{print $1}')
+reload() {
+    restart
+}
 
-            if [ "$STATUS" = "$PID" ]
-            then
-                echo "Killing Kibana...."
-                KILL=$(kill -15 $PID)
-                rm $PIDFILE
-                sleep 1
-                echo -e "\tKibana (PID:$PID) killed"
+force_reload() {
+    restart
+}
 
-            else
-                echo "Kibana is NOT running"
-                rm $PIDFILE
-            fi
-        else
-                echo "Kibana is NOT running"
-        fi
+rh_status() {
+    # run checks to determine if the service is running or use generic status
+    status -p $pidfile $prog
+}
+
+rh_status_q() {
+    rh_status >/dev/null 2>&1
 }
 
 
 case "$1" in
-  start)
-        do_start;;
-  stop)
-        do_stop
+    start)
+        rh_status_q && exit 0
+        $1
         ;;
-  status)
-        do_status
+    stop)
+        rh_status_q || exit 0
+        $1
         ;;
-  restart)
-        do_stop
-        do_start
+    restart)
+        $1
         ;;
-  *)
-        echo "Usage: $SCRIPTNAME {start|stop|status|restart}" >&2
-        exit 3
+    reload)
+        rh_status_q || exit 7
+        $1
         ;;
+    force-reload)
+        force_reload
+        ;;
+    status)
+        rh_status
+        ;;
+    condrestart|try-restart)
+        rh_status_q || exit 0
+        restart
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart|condrestart|try-restart|reload|force-reload}"
+        exit 2
 esac
 exit $?
