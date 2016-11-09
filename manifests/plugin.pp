@@ -8,30 +8,25 @@ define kibana::plugin(
   $ensure                 = 'present',
   $install_root           = $::kibana::install_path,
   $group                  = $::kibana::group,
-  $user                   = $::kibana::user,
-  $offline_plugin_install = $::kibana::offline_plugin_install,
-  $tmp_dir                = $::kibana::tmp_dir,
-  $plugin_file            = $::kibana::plugin_file) {
+  $user                   = $::kibana::user) {
 
-  validate_bool($offline_plugin_install)
-  validate_absolute_path($tmp_dir)
+  $plugins_dir = "${install_root}/kibana/installedPlugins"
 
-  if $offline_plugin_install == true {
-    if !$plugin_file {
-      fail("Class['kibana::plugin']: you must specify a value for plugin_file.")
-    }
-    $install_file = "${tmp_dir}/${name}.tar.gz"
-    $install_cmd = "kibana plugin --install ${name} --url file:///${install_file}"
+  validate_string($source)
+  $org_package_version = split($source, '/')
+  if $source =~ /^(https?|file):\/\/.*$/ and $name {
+    $plugin_name = $title
+    $install_cmd = "kibana plugin --install ${plugin_name} --url ${source}"
   }
-  else {
-    # plugins must be formatted <org>/<plugin>/<version>
-    $filenameArray = split($source, '/')
-    $base_module_name = $filenameArray[-2]
+  elsif is_array($org_package_version) and size($org_package_version) == 3 {
+    $plugin_name = $org_package_version[-2]
     $install_cmd = "kibana plugin --install ${source}"
   }
-
-  # borrowed heavily from https://github.com/elastic/puppet-elasticsearch/blob/master/manifests/plugin.pp
-  $plugins_dir = "${install_root}/kibana/installedPlugins"
+  else
+  {
+    fail("Kibana::plugin source is not valid. Must be <org>/<package>/<version> or direct http/https or file uri")
+  }
+  
   $uninstall_cmd = "kibana plugin --remove ${name}"
 
   Exec {
@@ -42,45 +37,24 @@ define kibana::plugin(
     try_sleep => 10,
     timeout   => 600,
   }
-  
+
   case $ensure {
     'installed', 'present': {
-      $name_file_path = "${plugins_dir}/${name}/.name"
-      if $offline_plugin_install == true {
-        exec { "download_plugin_$name":
-          path    => [ '/bin', '/usr/bin', '/usr/local/bin' ],
-          command => "${::kibana::params::download_tool} $install_file $plugin_file 2> /dev/null",
-          require => User[$user],
-          unless  => "test -e ${install_file}",
-        }
-        exec { "install_plugin_${name}":
-          command => $install_cmd,
-          creates => $name_file_path,
-          notify  => Service['kibana'],
-          require => [File[$plugins_dir],Exec["download_plugin_$name"]],
-        }
-        file {$name_file_path:
-          ensure  => file,
-          content => $base_module_name,
-          require => Exec["install_plugin_${name}"],
-        }
+      $name_file_path = "${plugins_dir}/${plugin_name}/.name"
+      exec {"install_plugin_${plugin_name}":
+        command => $install_cmd,
+        creates => $name_file_path,
+        notify  => Service['kibana'],
+        require => File[$plugins_dir],
       }
-      else {
-        exec {"install_plugin_${name}":
-          command => $install_cmd,
-          creates => $name_file_path,
-          notify  => Service['kibana'],
-          require => File[$plugins_dir],
-        }
-        file {$name_file_path:
-          ensure  => file,
-          content => $base_module_name,
-          require => Exec["install_plugin_${base_module_name}"],
-        }
+      file {$name_file_path:
+        ensure  => file,
+        content => $plugin_name,
+        require => Exec["install_plugin_${plugin_name}"],
       }
     }
     'absent': {
-      exec {"remove_plugin_${name}":
+      exec {"remove_plugin_${plugin_name}":
         command => $uninstall_cmd,
         onlyif  => "test -f ${name_file_path}",
         notify  => Service['kibana'],

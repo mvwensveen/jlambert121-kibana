@@ -28,8 +28,6 @@ class kibana::params {
   $user                   = 'kibana'
   $base_path              = undef
   $log_file               = '/var/log/kibana/kibana.log'
-  $offline_plugin_install = false
-  $plugin_file            = undef
 
   # Download tool
 
