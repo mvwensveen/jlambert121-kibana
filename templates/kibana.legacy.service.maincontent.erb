@@ -19,10 +19,16 @@ if [ "x$KIBANA_PID_FILE" = "x" ]; then
     KIBANA_PID_DIR="$(dirname $KIBANA_PID_FILE)"
 fi
 
+# Kibana writes the pid file on its own, so we need to give the kibana process the rights to edit it
 prog="kibana"
 pidfile=$KIBANA_PID_FILE
-mkdir -p $KIBANA_PID_DIR
-chown "$KIBANA_USER":"$KIBANA_GROUP" "$KIBANA_PID_DIR"
+if [ $KIBANA_PID_DIR != "/var/run" ]; then
+    mkdir -p $KIBANA_PID_DIR
+    chown "$KIBANA_USER":"$KIBANA_GROUP" "$KIBANA_PID_DIR"
+fi
+touch $pidfile
+chown "$KIBANA_USER":"$KIBANA_GROUP" "$pidfile"
+chmod 755 "$pidfile"
 exec=$KIBANA_HOME/bin/$prog
 lockfile=/var/lock/subsys/$prog
 
