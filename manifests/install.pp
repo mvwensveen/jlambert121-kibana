@@ -13,7 +13,7 @@ class kibana::install (
   $log_file            = $::kibana::log_file,
   $pid_file            = $::kibana::pid_file,
 ) {
-  if '4.6' in $version {
+  if $version >= '4.6' {
     $filename = $::architecture ? {
       /(i386|x86$)/    => "kibana-${version}-linux-x86",
       /(amd64|x86_64)/ => "kibana-${version}-linux-x86_64",
