@@ -5,7 +5,7 @@
 #
 class kibana::params {
   $version                = '4.0.1'
-  $base_url               = 'https://download.elasticsearch.org/kibana/kibana'
+  $base_url               = 'https://artifacts.elastic.co/downloads/kibana'
   $ca_cert                = undef
   $install_path           = '/opt'
   $tmp_dir                = '/tmp'
